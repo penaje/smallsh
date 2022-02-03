@@ -3,11 +3,27 @@
   Build command not configured, skipping.
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
   gcc -std=c99 -Wall -g -o smallsh smallsh.c
+  smallsh.c: In function ‘parseInput’:
+  smallsh.c:31:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
+       char* token = strtok_r(currLine, " \n", &saveptr);
+       ^
+  smallsh.c:31:19: warning: initialization makes pointer from integer without a cast [enabled by default]
+       char* token = strtok_r(currLine, " \n", &saveptr);
+                     ^
+  smallsh.c:45:11: warning: assignment makes pointer from integer without a cast [enabled by default]
+       token = strtok_r(NULL, " \n", &saveptr);
+             ^
+  smallsh.c:64:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+           token = strtok_r(NULL, " \n", &saveptr);
+                 ^
+  smallsh.c:75:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+               token = strtok_r(NULL, " \n", &saveptr);
+                     ^
+  smallsh.c:81:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+               token = strtok_r(NULL, " \n", &saveptr);
+                     ^
+  smallsh.c:90:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+           token = strtok_r(NULL, " \n", &saveptr);
+                 ^
   
-  /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crt1.o: In function `_start':
-  (.text+0x20): undefined reference to `main'
-  collect2: error: ld returned 1 exit status
-  make: *** [main] Error 1
-  
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\v160\Application Type\Linux\1.0\Linux.Makefile.Targets(333,5): error : make exited with code 2, please see the Output Window - Build output for more details (NOTE: the build output verbosity might need to be changed in Tools Options to see more information in the Output Window).
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\v160\Application Type\Linux\1.0\Linux.Makefile.Targets(333,5): warning : Cannot copy file '/nfs/stak/users/penaje/projects/smallsh/smallsh', file not found on the remote system.
+  Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'
