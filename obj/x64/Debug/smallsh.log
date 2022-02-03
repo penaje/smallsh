@@ -4,26 +4,34 @@
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
   gcc -std=c99 -Wall -g -o smallsh smallsh.c
   smallsh.c: In function ‘parseInput’:
-  smallsh.c:31:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
+  smallsh.c:32:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
        char* token = strtok_r(currLine, " \n", &saveptr);
        ^
-  smallsh.c:31:19: warning: initialization makes pointer from integer without a cast [enabled by default]
+  smallsh.c:32:19: warning: initialization makes pointer from integer without a cast [enabled by default]
        char* token = strtok_r(currLine, " \n", &saveptr);
                      ^
-  smallsh.c:45:11: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:46:11: warning: assignment makes pointer from integer without a cast [enabled by default]
        token = strtok_r(NULL, " \n", &saveptr);
              ^
-  smallsh.c:64:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:65:15: warning: assignment makes pointer from integer without a cast [enabled by default]
            token = strtok_r(NULL, " \n", &saveptr);
                  ^
-  smallsh.c:75:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:76:19: warning: assignment makes pointer from integer without a cast [enabled by default]
                token = strtok_r(NULL, " \n", &saveptr);
                      ^
-  smallsh.c:81:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:82:19: warning: assignment makes pointer from integer without a cast [enabled by default]
                token = strtok_r(NULL, " \n", &saveptr);
                      ^
-  smallsh.c:90:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:91:15: warning: assignment makes pointer from integer without a cast [enabled by default]
            token = strtok_r(NULL, " \n", &saveptr);
                  ^
+  smallsh.c: In function ‘varExpansion’:
+  smallsh.c:120:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
+           if (strstr(&inputString, pidVar) == &inputString[i])
+           ^
+  In file included from smallsh.c:3:0:
+  /usr/include/string.h:338:14: note: expected ‘const char *’ but argument is of type ‘char **’
+   extern char *strstr (const char *__haystack, const char *__needle)
+                ^
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'

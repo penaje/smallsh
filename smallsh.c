@@ -20,6 +20,7 @@ struct commandStruct {
 
 bool fgFlag = false;
 
+
 struct commandStruct* parseInput(char* currLine, bool fgFlag)
 {
     struct commandStruct* newCommand = malloc(sizeof(struct commandStruct));
@@ -94,17 +95,76 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
 
 }
 
+//Algorithm taken from https://www.tutorialspoint.com/c-program-to-replace-a-word-in-a-text-by-another-given-word
+char* varExpansion(char* inputString)
+{
+    char pidVar[] = "$$";
+
+    //get the process id as an int
+    int process_id = getpid();
+
+    // The below 3 lines of code are from https://stackoverflow.com/questions/5242524/converting-int-to-string-in-c
+    int length = snprintf(NULL, 0, "%d", process_id);
+    char* str = malloc(length + 1);
+
+    //cast the Pid into the str string
+    snprintf(str, length + 1, "%d", process_id);
+
+    //replace '$$' with the PiD string
+    int i = 0, cnt = 0;
+    int new_len = strlen(str);
+    int old_len = strlen(pidVar);
+
+    for (i = 0; inputString[i] != '\0'; i++)
+    {
+        if (strstr(&inputString, pidVar) == &inputString[i])
+        {
+            cnt++;
+            i += old_len - 1;
+        }
+    }
+
+    char* expCommand = (char*)malloc(i + cnt * (new_len - old_len) + 1);
+    i = 0;
+
+    while (*inputString)
+    {
+        if (strstr(inputString, pidVar) == inputString)
+        {
+            strcpy(&expCommand[i], str);
+            i += new_len;
+            inputString += old_len;
+        }
+        else
+        {
+            expCommand[i++] = *inputString++;
+        }
+    }
+
+    //frees the dynamically allocated memory
+    free(str);
+
+    //printf("Expanded Command is: %s\n", expCommand);
+    return(expCommand);
+}
+
 char* getInput() 
 {
     // Displays the command line prompt
     printf(": ");
     fflush(stdout);
 
+
     // Stores input from stdin up to 2048 characters or until a new line character
     char* inputText = calloc(2049, sizeof(char));
     fgets(inputText, 2048, stdin);
 
-    return inputText;
+
+    //expand the input to account for the "$$"
+    char* expandedInput;
+    expandedInput = varExpansion(inputText);
+
+    return expandedInput;
 }
 
 void printCommand(struct commandStruct* aCommand) {
@@ -143,7 +203,6 @@ int main(void)
     {
         input = getInput();
     }
-    
 
     return 0;
 
