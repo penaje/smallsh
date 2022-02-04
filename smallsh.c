@@ -13,6 +13,15 @@
 #define MAX_BUF 200
 #endif // !MAX_BUFF
 
+//holds the process id's that are running
+pid_t backgroundPids[201];
+
+//background process count starts at 0
+int bgCount = 0;
+
+//initalize the status variables for use in Status command
+char statusString[25];
+int statusNum = 0;
 
 
 //Struct for storing commands from the user
@@ -191,6 +200,7 @@ void printCommand(struct commandStruct* aCommand)
 //Assuming this will be executed from mainScreen, so we will pass it the whole command struct
 void changeDir(struct commandStruct* aCommand)
 {
+    //checks for an argument
     if (aCommand->args[0] == NULL)
     {
         chdir(getenv("HOME"));
@@ -214,6 +224,79 @@ void changeDir(struct commandStruct* aCommand)
             fflush(stdout);
         }
     }
+}
+
+//adds the Pid to the list of running processes
+//may modify this later 
+void addBackgroundPid(pid_t pidNum)
+{
+    backgroundPids[bgCount] = pidNum;
+    bgCount++;
+}
+
+//NEED TO TEST THIS
+//checks if any processes have terminated
+void backgroundCheck(pid_t backgroundPids[])
+{
+    int childExitMethod;
+
+    //wait for ANY child processes
+    pid_t childPID = waitpid(-1, &childExitMethod, WNOHANG);
+
+    if (childPID != 0)
+    {
+        if (childPID == -1)
+        {
+            perror("wait failed\n");
+            exit(1);
+        }
+        else
+        {
+            if (WIFEXITED(childExitMethod) != 0)
+            {
+                printf("background pid %d is done: ", childPID);
+                int exitStatus = WEXITSTATUS(childExitMethod);
+                printf("exit value %d", exitStatus);
+            }
+            else if (WIFSIGNALED(childExitMethod) != 0)
+            {
+                printf("background pid %d is done: ", childPID);
+                int termSignal = WTERMSIG(childExitMethod);
+                printf("terminated by signal %d", termSignal);
+            }               
+        }
+    }
+
+    //Can I use NULL in an array of pid_t's???
+    for (int i = 0; i < 200; i++)
+    {
+        if (backgroundPids[i] == childPID)
+        {
+            backgroundPids[i] = NULL;
+        }
+    }
+}
+
+
+//work on this more...
+void exitShell()
+{
+    //takes the value of num of process running
+    int i = bgCount;
+    while (i > 0)
+    {
+        //call SIGTERM
+        kill(backgroundPids[i], 15);
+        i--;
+    }
+    //do I need this?
+    exit(0);
+}
+
+void execCommand(struct commandStruct* aCommand)
+{
+
+
 }
 
 void mainScreen()
