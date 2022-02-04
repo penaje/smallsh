@@ -19,9 +19,6 @@ pid_t backgroundPids[201];
 //background process count starts at 0
 int bgCount = 0;
 
-//initalize the status variables for use in Status command
-char statusString[25];
-int statusNum = 0;
 
 
 //Struct for storing commands from the user
@@ -46,6 +43,7 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     //the first token will be the command
     char* token = strtok_r(currLine, " \n", &saveptr);
 
+
     //If there is no command we return NULL
     if (token == NULL)
     {
@@ -55,6 +53,10 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     {
         newCommand->command = calloc(strlen(token) + 1, sizeof(char));
         strcpy(newCommand->command, token);
+
+        //first arg needs to be the name of the command
+        newCommand->args[0] = calloc(strlen(token) + 1, sizeof(char));
+        strcpy(newCommand->args[0], token);
     }  
 
     //advance the token
@@ -67,9 +69,9 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     }
 
     //Now we get the arguments
-    int i = 0;
-    newCommand->args[0] = calloc(strlen(token) + 1, sizeof(char));
-    strcpy(newCommand->args[0], token); 
+    int i = 1;
+    newCommand->args[1] = calloc(strlen(token) + 1, sizeof(char));
+    strcpy(newCommand->args[1], token); 
      
 
     while ((token != NULL) && (strcmp(token, "<") != 0) && (strcmp(token, ">") != 0) && (strcmp(token, "&") != 0))
@@ -179,7 +181,7 @@ char* getInput()
 
 void printCommand(struct commandStruct* aCommand) 
 {
-    printf("command: %s | inputRedir: %s | OutputRedir: %s | Background: %d | ", 
+    printf("command: %s | inputRedir: %s | OutputRedir: %s | Background: %d \n", 
         aCommand->command,
         aCommand->inpRedir,
         aCommand->outpRedir,
@@ -201,7 +203,7 @@ void printCommand(struct commandStruct* aCommand)
 void changeDir(struct commandStruct* aCommand)
 {
     //checks for an argument
-    if (aCommand->args[0] == NULL)
+    if (aCommand->args[1] == NULL)
     {
         chdir(getenv("HOME"));
         char currDir[MAX_BUF];
@@ -211,9 +213,9 @@ void changeDir(struct commandStruct* aCommand)
     }
     else
     {
-        if (chdir(aCommand->args[0]) != 0)
+        if (chdir(aCommand->args[1]) != 0)
         {
-            printf("Error occured, directory not changed");
+            printf("Error occured, directory not changed\n");
             fflush(stdout);
         }
         else
@@ -234,37 +236,49 @@ void addBackgroundPid(pid_t pidNum)
     bgCount++;
 }
 
-//NEED TO TEST THIS
+//TODO: This is not working....
 //checks if any processes have terminated
+//need to handle -1
 void backgroundCheck(pid_t backgroundPids[])
 {
+    printf("Printing out bg processes!\n");
+    fflush(stdout);
+    int j = 0;
+    while (backgroundPids[j] != NULL)
+    {
+        printf("%d\n", backgroundPids[j]);
+        fflush(stdout);
+        j++;
+    }
+    printf("Thats all the processes\n");
+    fflush(stdout);
+
     int childExitMethod;
 
     //wait for ANY child processes
     pid_t childPID = waitpid(-1, &childExitMethod, WNOHANG);
 
-    if (childPID != 0)
+
+    //if no error and child has terminated
+    if (childPID > 0)
     {
-        if (childPID == -1)
+        if (WIFEXITED(childExitMethod) != 0)
         {
-            perror("wait failed\n");
-            exit(1);
+            printf("background pid %d is done: ", childPID);
+            fflush(stdout);
+            int exitStatus = WEXITSTATUS(childExitMethod);
+            printf("exit value %d\n", exitStatus);
+            fflush(stdout);
         }
-        else
+        else if (WIFSIGNALED(childExitMethod) != 0)
         {
-            if (WIFEXITED(childExitMethod) != 0)
-            {
-                printf("background pid %d is done: ", childPID);
-                int exitStatus = WEXITSTATUS(childExitMethod);
-                printf("exit value %d", exitStatus);
-            }
-            else if (WIFSIGNALED(childExitMethod) != 0)
-            {
-                printf("background pid %d is done: ", childPID);
-                int termSignal = WTERMSIG(childExitMethod);
-                printf("terminated by signal %d", termSignal);
-            }               
+            printf("background pid %d is done: ", childPID);
+            fflush(stdout);
+            int termSignal = WTERMSIG(childExitMethod);
+            printf("terminated by signal %d\n", termSignal);
+            fflush(stdout);
         }
+        
     }
 
     //Can I use NULL in an array of pid_t's???
@@ -275,31 +289,122 @@ void backgroundCheck(pid_t backgroundPids[])
             backgroundPids[i] = NULL;
         }
     }
+
+    //for testing
+    printf("Printing out remaining processes!\n");
+    fflush(stdout);
+    int k = 0;
+    while (backgroundPids[k] != NULL)
+    {
+        printf("%d\n", backgroundPids[k]);
+        fflush(stdout);
+        k++;
+    }
+    printf("Thats all the processes\n");
+    fflush(stdout);
 }
 
 
-//work on this more...
+//TODO: NEED TO TEST THIS
 void exitShell()
 {
-    //takes the value of num of process running
-    int i = bgCount;
-    while (i > 0)
+    int i;
+
+    //iterate through the child processes and terminate them if they have not completed
+    for (i = bgCount; i > 0; i--)
     {
-        //call SIGTERM
-        kill(backgroundPids[i], 15);
-        i--;
+        int childExitMethod;
+        pid_t childPID;
+
+        //if child has not completed then we terminate
+        if (waitpid(backgroundPids[i], &childExitMethod, WNOHANG) == 0)
+        {
+            //call SIGTERM
+            kill(backgroundPids[i], 15);
+            i--;
+        }
+        else
+        {
+            i--;
+        }
+        
     }
     //do I need this?
     exit(0);
 }
 
+
+//Testing this
 void execCommand(struct commandStruct* aCommand)
 {
+    pid_t spawnPid = -5;
+    int childExitStatus;
+
+    spawnPid = fork();
+
+    //add the new Pid to list of background Pids
+    addBackgroundPid(spawnPid);
+
+    switch (spawnPid)
+    {
+        case -1:
+        {
+            perror("Error with forking!\n");
+            fflush(stdout);
+            exit(1);
+            break;
+        }
+        case 0:
+        {
+            addBackgroundPid(getpid());
+            printf("CHILD '%d': Sleep for 1 sec\n", getpid());
+            fflush(stdout);
+            sleep(1);
+            printf("CHILD '%d': Converting into '%s'\n", getpid(), aCommand->command);
+            fflush(stdout);
+            if (execvp(aCommand->command, aCommand->args) < 0)
+            {
+                perror("Exec Failure!\n");
+                fflush(stdout);
+                exit(1);
+            }               
+        }
+        default:
+        {
+            printf("PARENT '%d: Sleeping for 2 seconds\n", getpid());
+            fflush(stdout);
+            sleep(2);
+            printf("PARENT '%d: Waiting for child '%d' to terminate\n", getpid(), spawnPid);
+            fflush(stdout);
 
 
+            pid_t actualPid = waitpid(spawnPid, &childExitStatus, 0);
+            printf("PARENT '%d': Child '%d' terminated, Exiting!\n", getpid(), actualPid);
+            fflush(stdout);
+
+            //tell us why the child exited/terminated
+            if (WIFEXITED(childExitStatus) != 0)
+            {
+                printf("background pid %d is done: ", spawnPid);
+                fflush(stdout);
+                int exitStatus = WEXITSTATUS(childExitStatus);
+                printf("exit value %d\n", exitStatus);
+                fflush(stdout);
+            }
+            else if (WIFSIGNALED(childExitStatus) != 0)
+            {
+                printf("background pid %d is done: ", spawnPid);
+                fflush(stdout);
+                int termSignal = WTERMSIG(childExitStatus);
+                printf("terminated by signal %d\n", termSignal);
+                fflush(stdout);
+            }
+            break;
+        }
+    }
 }
 
-void mainScreen()
+void mainScreen(char* statusString, int statusCode)
 {
     char* input;
     struct commandStruct* commandLine;
@@ -309,25 +414,46 @@ void mainScreen()
     //if user enters nothing or '#' then we restart
     if ((commandLine->command == NULL) || (strcmp(commandLine->command, "#") == 0) || (strcmp(commandLine->command, " \n") == 0))
     {
-        mainScreen();
+        mainScreen(statusString, statusCode);
     }
+
+    //If user enters "cd"
     else if (strcmp(commandLine->command, "cd") == 0)
         {
             changeDir(commandLine);
         }
+
+    else if (strcmp(commandLine->command, "status") == 0)
+    {
+        printf("%s %d\n", statusString, statusCode);
+        fflush(stdout);
+    }
+    else if (strcmp(commandLine->command, "exit") == 0)
+    {
+        exitShell();
+    }
     else
+    //use execvp to run commands as child
     {
         printCommand(commandLine);
+        execCommand(commandLine);
     }
+
+    //backgroundCheck(backgroundPids);
     exit(1);
 }
 
 int main(void)
 {
+    //initalize the status variables for use in Status command
+    char statusString[30];
+    strcpy(statusString, "exit value");
+    int statusCode = 0;
+
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen();
+    mainScreen(statusString, statusCode);
 
     return 0;
 
