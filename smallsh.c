@@ -7,6 +7,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <limits.h>
+
+#ifndef MAX_BUF
+#define MAX_BUF 200
+#endif // !MAX_BUFF
+
 
 
 //Struct for storing commands from the user
@@ -64,10 +70,6 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
         i++;
         token = strtok_r(NULL, " \n", &saveptr);
     }
-
-    //ends the array with a NULL pointer
-    newCommand->args[i] = malloc(sizeof(char));
-    newCommand->args[i] = NULL;
 
     while (token != NULL)
     {
@@ -150,37 +152,91 @@ char* varExpansion(char* inputString)
 
 char* getInput() 
 {
-    // Displays the command line prompt
     printf(": ");
     fflush(stdout);
 
 
-    // Stores input from stdin up to 2048 characters or until a new line character
+    // stores the input from the user
     char* inputText = calloc(2049, sizeof(char));
     fgets(inputText, 2048, stdin);
 
 
-    //expand the input to account for the "$$"
+    //call the expand function to account for the "$$"
     char* expandedInput;
     expandedInput = varExpansion(inputText);
 
     return expandedInput;
 }
 
-void printCommand(struct commandStruct* aCommand) {
+void printCommand(struct commandStruct* aCommand) 
+{
     printf("command: %s | inputRedir: %s | OutputRedir: %s | Background: %d | ", 
         aCommand->command,
         aCommand->inpRedir,
         aCommand->outpRedir,
         aCommand->background);
 
+    fflush(stdout);
+
     int i = 0;
     while (aCommand->args[i] != NULL)
     {
-        printf("args[%d]: %s ", i, aCommand->args[i]);
+        printf("args[%d]: %s \n", i, aCommand->args[i]);
         i++;
     }
-    printf("\n");
+    fflush(stdout);
+
+}
+
+//Assuming this will be executed from mainScreen, so we will pass it the whole command struct
+void changeDir(struct commandStruct* aCommand)
+{
+    if (aCommand->args[0] == NULL)
+    {
+        chdir(getenv("HOME"));
+        char currDir[MAX_BUF];
+        getcwd(currDir, MAX_BUF);
+        printf("Current working directory: %s\n", currDir);
+        fflush(stdout);
+    }
+    else
+    {
+        if (chdir(aCommand->args[0]) != 0)
+        {
+            printf("Error occured, directory not changed");
+            fflush(stdout);
+        }
+        else
+        {
+            char currDir[MAX_BUF];
+            getcwd(currDir, MAX_BUF);
+            printf("Current working directory: %s\n", currDir);
+            fflush(stdout);
+        }
+    }
+}
+
+void mainScreen()
+{
+    char* input;
+    struct commandStruct* commandLine;
+    input = getInput();
+    commandLine = parseInput(input, fgFlag);
+
+    //if user enters nothing or '#' then we restart
+    if ((commandLine->command == NULL) || (strcmp(commandLine->command, "#") == 0) || (strcmp(commandLine->command, " \n") == 0))
+    {
+        mainScreen();
+    }
+    else if (strcmp(commandLine->command, "cd") == 0)
+        {
+            changeDir(commandLine);
+        }
+    else
+    {
+        printCommand(commandLine);
+    }
+    exit(1);
 }
 
 int main(void)
@@ -188,21 +244,7 @@ int main(void)
     printf("$ smallsh\n");
     fflush(stdout);
 
-    char* input;
-    struct commandStruct* commandLine;
-
-    input = getInput();
-
-    commandLine = parseInput(input, fgFlag);
-
-    if (commandLine != NULL)
-    {
-        printCommand(commandLine);
-    }
-    else
-    {
-        input = getInput();
-    }
+    mainScreen();
 
     return 0;
 
