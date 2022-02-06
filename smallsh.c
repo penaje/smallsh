@@ -158,8 +158,12 @@ char* varExpansion(char* inputString)
     return(expCommand);
 }
 
-char* getInput() 
+char* getInput(pid_t backgroundPids[])
 {
+    //clean up background process before returning control
+    backgroundCheck(backgroundPids);
+
+
     printf(": ");
     fflush(stdout);
 
@@ -243,7 +247,7 @@ void addBackgroundPid(pid_t pidNum)
 
 
 //make this work
-void updateStatus()
+void updateStatus(char* newStatus, int *newCode)
 {
 
 }
@@ -322,31 +326,25 @@ void exitShell()
     int i;
 
     //iterate through the child processes and terminate them if they have not completed
+    //add a break condition if encountinring NULL
     for (i = 0; i < 200; i++)
     {
         int childExitMethod;
-        pid_t childPID;
 
         //if child has not completed then we terminate
         if (waitpid(backgroundPids[i], &childExitMethod, WNOHANG) == 0)
         {
             //call SIGTERM
             kill(backgroundPids[i], 15);
-            i--;
-        }
-        else
-        {
-            i++;
-        }
-        
+        }        
     }
-    //do I need this?
-    exit(0);
+    //kill the parent process
+    kill(getpid(), 15);
 }
 
 
 //Testing this
-void execCommand(struct commandStruct* aCommand, char *statusString, int *statusCode)
+void execCommand(struct commandStruct* aCommand, char *statusString, int statusCode)
 {
     pid_t spawnPid;
     int childExitStatus;
@@ -410,9 +408,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
 
                     //update the exit status & code
                     strcpy(statusString, "exit value");
-
-                    //This is not working, implement update status, will need to remove arguments
-                    //*statusCode = WEXITSTATUS(childExitStatus);
+                    statusCode = WEXITSTATUS(childExitStatus);
 
                 }
                 else if (WIFSIGNALED(childExitStatus) != 0)
@@ -425,9 +421,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
 
                     //update the exist status and terminating signal
                     strcpy(statusString, "terminated by signal");
-
-                    //This is not working, implement update status, will need to remove arguments
-                    //*statusCode = WTERMSIG(childExitStatus);
+                    statusCode = WTERMSIG(childExitStatus);
                 }
             }
             break;
@@ -435,17 +429,17 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
     }
 }
 
-void mainScreen(char* statusString, int statusCode)
+void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
 {
     char* input;
     struct commandStruct* commandLine;
-    input = getInput();
+    input = getInput(backgroundPids);
     commandLine = parseInput(input, fgFlag);
 
     //handles when the user doesn't enter anything
     if (commandLine == NULL)
     {
-        mainScreen(statusString, statusCode);
+        mainScreen(statusString, statusCode, backgroundPids);
     }
 
     //as long as 'exit' not entered continue looping
@@ -454,37 +448,38 @@ void mainScreen(char* statusString, int statusCode)
         //if user enters nothing or '#' then we restart
         if ((strcmp(commandLine->command, "#") == 0) || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
         {
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, backgroundPids);
         }
 
         //If user enters "cd"
         else if (strcmp(commandLine->command, "cd") == 0)
         {
             changeDir(commandLine);
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, backgroundPids);
         }
 
         else if (strcmp(commandLine->command, "status") == 0)
         {
             printf("%s %d\n", statusString, statusCode);
             fflush(stdout);
-            mainScreen(statusString, statusCode);
-        }
-        else if (strcmp(commandLine->command, "exit") == 0)
-        {
-            exitShell();
+            mainScreen(statusString, statusCode, backgroundPids);
         }
         else
             //use execvp to run commands as child
         {
             //printCommand(commandLine);
             execCommand(commandLine, statusString, statusCode);
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, backgroundPids);
         }
     }
 
-    //backgroundCheck(backgroundPids);
-    exit(1);
+    if (strcmp(commandLine->command, "exit") == 0)
+    {
+        exitShell();
+    }
+
+    //remove this once exit command is finished
+    //exit(1);
 }
 
 int main(void)
@@ -497,7 +492,7 @@ int main(void)
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen(statusString, statusCode);
+    mainScreen(statusString, statusCode, backgroundPids);
 
     return 0;
 
