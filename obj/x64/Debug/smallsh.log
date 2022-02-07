@@ -4,29 +4,30 @@
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
   gcc -std=c99 -Wall -g -o smallsh smallsh.c
   smallsh.c: In function ‘parseInput’:
-  smallsh.c:41:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
+  smallsh.c:42:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
        char* token = strtok_r(currLine, " \n", &saveptr);
        ^
-  smallsh.c:41:19: warning: initialization makes pointer from integer without a cast [enabled by default]
+  smallsh.c:42:19: warning: initialization makes pointer from integer without a cast [enabled by default]
        char* token = strtok_r(currLine, " \n", &saveptr);
                      ^
-  smallsh.c:60:11: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:61:11: warning: assignment makes pointer from integer without a cast [enabled by default]
        token = strtok_r(NULL, " \n", &saveptr);
              ^
-  smallsh.c:77:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:78:15: warning: assignment makes pointer from integer without a cast [enabled by default]
            token = strtok_r(NULL, " \n", &saveptr);
                  ^
-  smallsh.c:84:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:85:19: warning: assignment makes pointer from integer without a cast [enabled by default]
                token = strtok_r(NULL, " \n", &saveptr);
                      ^
-  smallsh.c:90:19: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:91:19: warning: assignment makes pointer from integer without a cast [enabled by default]
                token = strtok_r(NULL, " \n", &saveptr);
                      ^
-  smallsh.c:99:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+  smallsh.c:100:15: warning: assignment makes pointer from integer without a cast [enabled by default]
            token = strtok_r(NULL, " \n", &saveptr);
                  ^
   smallsh.c: In function ‘varExpansion’:
-  smallsh.c:130:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
+  
+  smallsh.c:135:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
            if (strstr(&inputString, pidVar) == &inputString[i])
            ^
   In file included from smallsh.c:3:0:
@@ -34,31 +35,27 @@
    extern char *strstr (const char *__haystack, const char *__needle)
                 ^
   smallsh.c: In function ‘getInput’:
-  smallsh.c:164:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
-       backgroundCheck(backgroundPids);
+  smallsh.c:167:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
+       backgroundCheck();
        ^
   smallsh.c: In function ‘addBackgroundPid’:
-  smallsh.c:238:31: warning: comparison between pointer and integer [enabled by default]
+  smallsh.c:240:31: warning: comparison between pointer and integer [enabled by default]
            if (backgroundPids[i] == NULL)
                                  ^
   smallsh.c: At top level:
-  smallsh.c:250:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
-   void backgroundCheck(pid_t backgroundPids[])
+  smallsh.c:252:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
+   void backgroundCheck()
         ^
-  smallsh.c:164:5: note: previous implicit declaration of ‘backgroundCheck’ was here
-       backgroundCheck(backgroundPids);
+  smallsh.c:167:5: note: previous implicit declaration of ‘backgroundCheck’ was here
+       backgroundCheck();
        ^
   smallsh.c: In function ‘backgroundCheck’:
-  smallsh.c:298:31: warning: assignment makes integer from pointer without a cast [enabled by default]
+  smallsh.c:286:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
   smallsh.c: In function ‘exitShell’:
-  smallsh.c:334:13: warning: implicit declaration of function ‘kill’ [-Wimplicit-function-declaration]
+  smallsh.c:306:13: warning: implicit declaration of function ‘kill’ [-Wimplicit-function-declaration]
                kill(backgroundPids[i], 15);
                ^
-  smallsh.c: In function ‘execCommand’:
-  smallsh.c:465:25: warning: unused variable ‘exitStatus’ [-Wunused-variable]
-                       int exitStatus = WEXITSTATUS(childExitStatus);
-                           ^
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'

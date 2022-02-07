@@ -13,7 +13,8 @@
 #define MAX_BUF 200
 #endif // !MAX_BUFF
 
-//holds the process id's that are running, max of 200 background processes
+//holds the process id's that are running
+//Using a max of 200 https://edstem.org/us/courses/16718/discussion/1080332
 pid_t backgroundPids[200];
 
 
@@ -103,7 +104,11 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
 
 }
 
-//Algorithm taken from https://www.tutorialspoint.com/c-program-to-replace-a-word-in-a-text-by-another-given-word
+/*
+* Algorithm adapted from
+* CITATION: https ://www.tutorialspoint.com/c-program-to-replace-a-word-in-a-text-by-another-given-word
+* This function handles variable expansion
+*/
 char* varExpansion(char* inputString)
 {
     char pidVar[] = "$$";
@@ -153,15 +158,13 @@ char* varExpansion(char* inputString)
 
     //frees the dynamically allocated memory
     free(str);
-
-    //printf("Expanded Command is: %s\n", expCommand);
     return(expCommand);
 }
 
-char* getInput(pid_t backgroundPids[])
+char* getInput()
 {
     //clean up background process before returning control
-    backgroundCheck(backgroundPids);
+    backgroundCheck();
 
 
     printf(": ");
@@ -200,7 +203,7 @@ void printCommand(struct commandStruct* aCommand)
 
 }
 
-//Assuming this will be executed from mainScreen, so we will pass it the whole command struct
+//This will be executed from mainScreen, so we will pass it the whole command struct
 void changeDir(struct commandStruct* aCommand)
 {
     //checks for an argument
@@ -230,7 +233,6 @@ void changeDir(struct commandStruct* aCommand)
 }
 
 //adds the Pid to the list of running processes
-//may modify this later 
 void addBackgroundPid(pid_t pidNum)
 {
     for (int i = 0; i < 200; i++)
@@ -247,22 +249,8 @@ void addBackgroundPid(pid_t pidNum)
 
 
 //checks if any processes have terminated
-void backgroundCheck(pid_t backgroundPids[])
+void backgroundCheck()
 {
-    /*
-    printf("Printing out bg processes!\n");
-    fflush(stdout);
-    int j = 0;
-    while (backgroundPids[j] != NULL)
-    {
-        printf("%d\n", backgroundPids[j]);
-        fflush(stdout);
-        j++;
-    }
-    printf("Thats all the processes\n");
-    fflush(stdout);
-    */
-
     int childExitMethod;
 
     //wait for ANY child processes
@@ -298,31 +286,15 @@ void backgroundCheck(pid_t backgroundPids[])
             backgroundPids[i] = NULL;
         }
     }
-
-    /*
-    //for testing
-    printf("Printing out remaining processes!\n");
-    fflush(stdout);
-    int k = 0;
-    while (backgroundPids[k] != NULL)
-    {
-        printf("%d\n", backgroundPids[k]);
-        fflush(stdout);
-        k++;
-    }
-    printf("Thats all the processes\n");
-    fflush(stdout);
-    */
 }
 
 
-//TODO: NEED TO TEST THIS
+//Kills all child processes and then exits
 void exitShell()
 {
     int i;
 
     //iterate through the child processes and terminate them if they have not completed
-    //add a break condition if encountinring NULL
     for (i = 0; i < 200; i++)
     {
         int childExitMethod;
@@ -339,7 +311,7 @@ void exitShell()
 }
 
 
-//Testing this
+//Uses execvp to execute the non built in commands
 void execCommand(struct commandStruct* aCommand, char *statusString, int statusCode)
 {
     pid_t spawnPid;
@@ -358,7 +330,6 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
         {
             perror("Error with forking!\n");
             fflush(stdout);
-            statusCode = 1;
             exit(1);
             break;
         }
@@ -445,12 +416,8 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
 
                 //give control back to parent with child running in the background
                 spawnPid = waitpid(spawnPid, &childExitStatus, WNOHANG);
-
-                //may need to take this out, makes it so that the  ':' prints out approipriately
-                sleep(1);
-
-
             }
+
             else
 
                 //run in the foreground
@@ -460,12 +427,6 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
                 //tell us why the child exited/terminated
                 if (WIFEXITED(childExitStatus) != 0)
                 {
-                    //printf("pid %d is done: ", spawnPid);
-                    //fflush(stdout);
-                    int exitStatus = WEXITSTATUS(childExitStatus);
-                    //printf("exit value %d\n", exitStatus);
-                    //fflush(stdout);
-
                     //update the exit status & code
                     strcpy(statusString, "exit value");
                     statusCode = WEXITSTATUS(childExitStatus);
@@ -489,7 +450,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
     }
 }
 
-void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
+void mainScreen(char* statusString, int statusCode)
 {
     char* input;
     struct commandStruct* commandLine;
@@ -499,7 +460,7 @@ void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
     //handles when the user doesn't enter anything
     if (commandLine == NULL)
     {
-        mainScreen(statusString, statusCode, backgroundPids);
+        mainScreen(statusString, statusCode);
     }
 
     //as long as 'exit' not entered continue looping
@@ -508,28 +469,28 @@ void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
         //if user enters nothing or '#' then we restart
         if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
         {
-            mainScreen(statusString, statusCode, backgroundPids);
+            mainScreen(statusString, statusCode);
         }
 
         //If user enters "cd"
         else if (strcmp(commandLine->command, "cd") == 0)
         {
             changeDir(commandLine);
-            mainScreen(statusString, statusCode, backgroundPids);
+            mainScreen(statusString, statusCode);
         }
 
         else if (strcmp(commandLine->command, "status") == 0)
         {
             printf("%s %d\n", statusString, statusCode);
             fflush(stdout);
-            mainScreen(statusString, statusCode, backgroundPids);
+            mainScreen(statusString, statusCode);
         }
         else
             //use execvp to run commands as child
         {
             //printCommand(commandLine);
             execCommand(commandLine, statusString, statusCode);
-            mainScreen(statusString, statusCode, backgroundPids);
+            mainScreen(statusString, statusCode);
         }
     }
 
@@ -537,9 +498,6 @@ void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
     {
         exitShell();
     }
-
-    //remove this once exit command is finished
-    //exit(1);
 }
 
 int main(void)
@@ -552,7 +510,7 @@ int main(void)
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen(statusString, statusCode, backgroundPids);
+    mainScreen(statusString, statusCode);
 
     return 0;
 
