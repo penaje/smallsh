@@ -3,9 +3,8 @@
   Build command not configured, skipping.
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
   gcc -std=gnu99 -Wall -g -o smallsh smallsh.c
-  
   smallsh.c: In function ‘varExpansion’:
-  smallsh.c:135:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
+  smallsh.c:136:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
            if (strstr(&inputString, pidVar) == &inputString[i])
            ^
   In file included from smallsh.c:3:0:
@@ -13,22 +12,22 @@
    extern char *strstr (const char *__haystack, const char *__needle)
                 ^
   smallsh.c: In function ‘getInput’:
-  smallsh.c:167:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
+  smallsh.c:168:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
        backgroundCheck();
        ^
   smallsh.c: In function ‘addBackgroundPid’:
-  smallsh.c:240:31: warning: comparison between pointer and integer [enabled by default]
+  smallsh.c:241:31: warning: comparison between pointer and integer [enabled by default]
            if (backgroundPids[i] == NULL)
                                  ^
   smallsh.c: At top level:
-  smallsh.c:252:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
+  smallsh.c:253:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
    void backgroundCheck()
         ^
-  smallsh.c:167:5: note: previous implicit declaration of ‘backgroundCheck’ was here
+  smallsh.c:168:5: note: previous implicit declaration of ‘backgroundCheck’ was here
        backgroundCheck();
        ^
   smallsh.c: In function ‘backgroundCheck’:
-  smallsh.c:286:31: warning: assignment makes integer from pointer without a cast [enabled by default]
+  smallsh.c:287:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
   

@@ -28,6 +28,7 @@ struct commandStruct {
     bool background;
 };
 
+//Will use once signal handlers are implemented...
 bool fgFlag = false;
 
 
