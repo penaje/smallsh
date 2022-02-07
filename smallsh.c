@@ -312,7 +312,7 @@ void exitShell()
 
 
 //Uses execvp to execute the non built in commands
-void execCommand(struct commandStruct* aCommand, char *statusString, int statusCode)
+void execCommand(struct commandStruct* aCommand, char *statusString, int *statusCode)
 {
     pid_t spawnPid;
     int childExitStatus;
@@ -395,9 +395,10 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
             {
                 perror("Exec Failure!\n");
                 fflush(stdout);
-                statusCode = 1;
+                *statusCode = 1;
                 exit(1);
             }
+
 
             break;
         }
@@ -429,7 +430,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
                 {
                     //update the exit status & code
                     strcpy(statusString, "exit value");
-                    statusCode = WEXITSTATUS(childExitStatus);
+                    *statusCode = WEXITSTATUS(childExitStatus);
 
                 }
                 else if (WIFSIGNALED(childExitStatus) != 0)
@@ -442,7 +443,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
 
                     //update the exist status and terminating signal
                     strcpy(statusString, "terminated by signal");
-                    statusCode = WTERMSIG(childExitStatus);
+                    *statusCode = WTERMSIG(childExitStatus);
                 }
             }
             break;
@@ -450,7 +451,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
     }
 }
 
-void mainScreen(char* statusString, int statusCode)
+void mainScreen(char* statusString, int *statusCode)
 {
     char* input;
     struct commandStruct* commandLine;
@@ -481,7 +482,7 @@ void mainScreen(char* statusString, int statusCode)
 
         else if (strcmp(commandLine->command, "status") == 0)
         {
-            printf("%s %d\n", statusString, statusCode);
+            printf("%s %d\n", statusString, *statusCode);
             fflush(stdout);
             mainScreen(statusString, statusCode);
         }
@@ -510,7 +511,7 @@ int main(void)
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen(statusString, statusCode);
+    mainScreen(statusString, &statusCode);
 
     return 0;
 

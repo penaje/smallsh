@@ -2,31 +2,9 @@
   Copying sources remotely to 'os1.engr.oregonstate.edu'
   Build command not configured, skipping.
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
-  gcc -std=c99 -Wall -g -o smallsh smallsh.c
-  smallsh.c: In function ‘parseInput’:
-  smallsh.c:42:5: warning: implicit declaration of function ‘strtok_r’ [-Wimplicit-function-declaration]
-       char* token = strtok_r(currLine, " \n", &saveptr);
-       ^
-  smallsh.c:42:19: warning: initialization makes pointer from integer without a cast [enabled by default]
-       char* token = strtok_r(currLine, " \n", &saveptr);
-                     ^
-  smallsh.c:61:11: warning: assignment makes pointer from integer without a cast [enabled by default]
-       token = strtok_r(NULL, " \n", &saveptr);
-             ^
-  smallsh.c:78:15: warning: assignment makes pointer from integer without a cast [enabled by default]
-           token = strtok_r(NULL, " \n", &saveptr);
-                 ^
-  smallsh.c:85:19: warning: assignment makes pointer from integer without a cast [enabled by default]
-               token = strtok_r(NULL, " \n", &saveptr);
-                     ^
-  smallsh.c:91:19: warning: assignment makes pointer from integer without a cast [enabled by default]
-               token = strtok_r(NULL, " \n", &saveptr);
-                     ^
-  smallsh.c:100:15: warning: assignment makes pointer from integer without a cast [enabled by default]
-           token = strtok_r(NULL, " \n", &saveptr);
-                 ^
-  smallsh.c: In function ‘varExpansion’:
+  gcc -std=gnu99 -Wall -g -o smallsh smallsh.c
   
+  smallsh.c: In function ‘varExpansion’:
   smallsh.c:135:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
            if (strstr(&inputString, pidVar) == &inputString[i])
            ^
@@ -53,9 +31,5 @@
   smallsh.c:286:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
-  smallsh.c: In function ‘exitShell’:
-  smallsh.c:306:13: warning: implicit declaration of function ‘kill’ [-Wimplicit-function-declaration]
-               kill(backgroundPids[i], 15);
-               ^
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'

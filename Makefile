@@ -1,5 +1,5 @@
 main:
-	gcc -std=c99 -Wall -g -o smallsh smallsh.c
+	gcc -std=gnu99 -Wall -g -o smallsh smallsh.c
 
 clean:
 	rm -f smallsh
