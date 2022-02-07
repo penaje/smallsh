@@ -209,8 +209,8 @@ void changeDir(struct commandStruct* aCommand)
         chdir(getenv("HOME"));
         char currDir[MAX_BUF];
         getcwd(currDir, MAX_BUF);
-        printf("Current working directory: %s\n", currDir);
-        fflush(stdout);
+        //printf("Current working directory: %s\n", currDir);
+        //fflush(stdout);
     }
     else
     {
@@ -223,8 +223,8 @@ void changeDir(struct commandStruct* aCommand)
         {
             char currDir[MAX_BUF];
             getcwd(currDir, MAX_BUF);
-            printf("Current working directory: %s\n", currDir);
-            fflush(stdout);
+            //printf("Current working directory: %s\n", currDir);
+            //fflush(stdout);
         }
     }
 }
@@ -238,25 +238,18 @@ void addBackgroundPid(pid_t pidNum)
         if (backgroundPids[i] == NULL)
         {
             backgroundPids[i] = pidNum;
-            printf("Background pid %d successfully added to array at index %d\n", pidNum, i);
-            fflush(stdout);
+            //printf("Background pid %d successfully added to array at index %d\n", pidNum, i);
+            //fflush(stdout);
             break;
         }
     }
 }
 
 
-//make this work
-void updateStatus(char* newStatus, int *newCode)
-{
-
-}
-
-//TODO: This is not working....
 //checks if any processes have terminated
-//need to handle -1
 void backgroundCheck(pid_t backgroundPids[])
 {
+    /*
     printf("Printing out bg processes!\n");
     fflush(stdout);
     int j = 0;
@@ -268,6 +261,7 @@ void backgroundCheck(pid_t backgroundPids[])
     }
     printf("Thats all the processes\n");
     fflush(stdout);
+    */
 
     int childExitMethod;
 
@@ -305,6 +299,7 @@ void backgroundCheck(pid_t backgroundPids[])
         }
     }
 
+    /*
     //for testing
     printf("Printing out remaining processes!\n");
     fflush(stdout);
@@ -317,6 +312,7 @@ void backgroundCheck(pid_t backgroundPids[])
     }
     printf("Thats all the processes\n");
     fflush(stdout);
+    */
 }
 
 
@@ -349,6 +345,11 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
     pid_t spawnPid;
     int childExitStatus;
 
+    int inpFD;
+    int outFD;
+    int result;
+
+    //fork into a new process
     spawnPid = fork();
 
     switch (spawnPid)
@@ -357,17 +358,76 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
         {
             perror("Error with forking!\n");
             fflush(stdout);
+            statusCode = 1;
             exit(1);
             break;
         }
         case 0:
-        {
+        {            
+            //check for input redirection or background flag
+            if ((aCommand->background == true) || (aCommand->inpRedir != NULL))
+            {
+                if (aCommand->inpRedir == NULL)
+                {
+                    inpFD = open("/dev/null", O_RDONLY);
+                }
+                else
+                {
+                    inpFD = open(aCommand->inpRedir, O_RDONLY);
+                }
+
+                if (inpFD == -1) 
+                {
+                    printf("cannot open %s for input\n", aCommand->inpRedir);
+                    fflush(stdout);
+                }
+
+                // Redirects stdin to the input file
+                result = dup2(inpFD, 0);
+
+                // Checks for error when redirecting the input
+                if (result == -1) 
+                {
+                    exit(1);
+                }
+            }
+
+            //check for output redirection or background flag
+            if ((aCommand->background == true) || (aCommand->outpRedir != NULL))
+            {
+                if (aCommand->outpRedir == NULL)
+                {
+                    outFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0640);
+                }
+                else
+                {
+                    outFD = open(aCommand->outpRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+                }
+
+                if (outFD == -1)
+                {
+                    printf("cannot open %s for output\n", aCommand->outpRedir);
+                    fflush(stdout);
+                }
+
+                // Redirects stdin to the output file
+                result = dup2(outFD, 1);
+
+                // Checks for error when redirecting the output
+                if (result == -1)
+                {
+                    exit(1);
+                }
+            }
+
             if (execvp(aCommand->command, aCommand->args) < 0)
             {
                 perror("Exec Failure!\n");
                 fflush(stdout);
+                statusCode = 1;
                 exit(1);
-            }     
+            }
+
             break;
         }
 
@@ -400,11 +460,11 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int statusC
                 //tell us why the child exited/terminated
                 if (WIFEXITED(childExitStatus) != 0)
                 {
-                    printf("pid %d is done: ", spawnPid);
-                    fflush(stdout);
+                    //printf("pid %d is done: ", spawnPid);
+                    //fflush(stdout);
                     int exitStatus = WEXITSTATUS(childExitStatus);
-                    printf("exit value %d\n", exitStatus);
-                    fflush(stdout);
+                    //printf("exit value %d\n", exitStatus);
+                    //fflush(stdout);
 
                     //update the exit status & code
                     strcpy(statusString, "exit value");
@@ -446,7 +506,7 @@ void mainScreen(char* statusString, int statusCode, pid_t backgroundPids[])
     while (strcmp(commandLine->command, "exit") != 0)
     {
         //if user enters nothing or '#' then we restart
-        if ((strcmp(commandLine->command, "#") == 0) || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
+        if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
         {
             mainScreen(statusString, statusCode, backgroundPids);
         }

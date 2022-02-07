@@ -42,25 +42,23 @@
            if (backgroundPids[i] == NULL)
                                  ^
   smallsh.c: At top level:
-  smallsh.c:258:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
+  smallsh.c:250:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
    void backgroundCheck(pid_t backgroundPids[])
         ^
   smallsh.c:164:5: note: previous implicit declaration of ‘backgroundCheck’ was here
        backgroundCheck(backgroundPids);
        ^
   smallsh.c: In function ‘backgroundCheck’:
-  smallsh.c:263:30: warning: comparison between pointer and integer [enabled by default]
-       while (backgroundPids[j] != NULL)
-                                ^
-  smallsh.c:304:31: warning: assignment makes integer from pointer without a cast [enabled by default]
+  smallsh.c:298:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
-  smallsh.c:312:30: warning: comparison between pointer and integer [enabled by default]
-       while (backgroundPids[k] != NULL)
-                                ^
   smallsh.c: In function ‘exitShell’:
-  smallsh.c:338:13: warning: implicit declaration of function ‘kill’ [-Wimplicit-function-declaration]
+  smallsh.c:334:13: warning: implicit declaration of function ‘kill’ [-Wimplicit-function-declaration]
                kill(backgroundPids[i], 15);
                ^
+  smallsh.c: In function ‘execCommand’:
+  smallsh.c:465:25: warning: unused variable ‘exitStatus’ [-Wunused-variable]
+                       int exitStatus = WEXITSTATUS(childExitStatus);
+                           ^
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'
