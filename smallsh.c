@@ -335,7 +335,10 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
             break;
         }
         case 0:
-        {            
+        {  
+            
+
+
             //check for input redirection or background flag
             if ((aCommand->background == true) || (aCommand->inpRedir != NULL))
             {
@@ -508,6 +511,20 @@ int main(void)
     char statusString[30];
     strcpy(statusString, "exit value");
     int statusCode = 0;
+
+    //ignore control C
+    struct sigaction stopSigint = { 0 };
+    stopSigint.sa_handler = sigInt;
+    sigfillset(&stopSigint.sa_mask);
+    stopSigint.sa_flags = 0;
+    sigaction(SIGINT, &stopSigint, NULL);
+
+    //redirect control Z to catchSIGTSTP()
+	struct sigaction sigTstop = {0};
+	sigTstop.sa_handler = catchSIGTSTP;
+	sigfillset(&sigTstop.sa_mask);
+	sigTstop.sa_flags = 0;
+	sigaction(SIGTSTP, &sigTstop, NULL);
 
     printf("$ smallsh\n");
     fflush(stdout);
