@@ -406,7 +406,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
 
             if (execvp(aCommand->command, aCommand->args) < 0)
             {
-                perror("Exec Failure!\n");
+                perror(aCommand->command);
                 fflush(stdout);
                 *statusCode = 1;
                 exit(1);
@@ -448,8 +448,8 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 }
                 else if (WIFSIGNALED(childExitStatus) != 0)
                 {
-                    printf("pid %d is done: ", spawnPid);
-                    fflush(stdout);
+                    //printf("pid %d is done: ", spawnPid);
+                    //fflush(stdout);
                     int termSignal = WTERMSIG(childExitStatus);
                     printf("terminated by signal %d\n", termSignal);
                     fflush(stdout);
@@ -520,7 +520,7 @@ void catchSIGTSTP(int signo)
     // If it's false, set it to true and display a message reentrantly
     if (fgFlag == false) 
     {
-        char* message = "Entering foreground-only mode (& is now ignored)\n";
+        char* message = "\nEntering foreground-only mode (& is now ignored)\n";
         write(STDOUT_FILENO, message, 49);
         fflush(stdout);
         fgFlag = true;
@@ -529,7 +529,7 @@ void catchSIGTSTP(int signo)
     // If it's true, set it to false and display a message reentrantly
     else 
     {
-        char* message = "Exiting foreground-only mode\n";
+        char* message = "\nExiting foreground-only mode\n";
         write(STDOUT_FILENO, message, 29);
         fflush(stdout);
         fgFlag = false;

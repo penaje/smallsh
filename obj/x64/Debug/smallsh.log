@@ -23,6 +23,7 @@
   smallsh.c:253:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
    void backgroundCheck()
         ^
+  
   smallsh.c:168:5: note: previous implicit declaration of ‘backgroundCheck’ was here
        backgroundCheck();
        ^
