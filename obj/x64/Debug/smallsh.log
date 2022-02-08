@@ -30,5 +30,14 @@
   smallsh.c:287:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
+  smallsh.c: In function ‘main’:
+  smallsh.c:548:12: warning: missing braces around initializer [-Wmissing-braces]
+       struct sigaction SIGINT_action = {0};
+              ^
+  smallsh.c:548:12: warning: (near initialization for ‘SIGINT_action.__sigaction_handler’) [-Wmissing-braces]
+  smallsh.c:555:12: warning: missing braces around initializer [-Wmissing-braces]
+       struct sigaction SIGTSTP_action = {0};
+              ^
+  smallsh.c:555:12: warning: (near initialization for ‘SIGTSTP_action.__sigaction_handler’) [-Wmissing-braces]
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'

@@ -313,7 +313,7 @@ void exitShell()
 
 
 //Uses execvp to execute the non built in commands
-void execCommand(struct commandStruct* aCommand, char *statusString, int *statusCode)
+void execCommand(struct commandStruct* aCommand, char *statusString, int *statusCode, struct sigaction SIGINT_action, struct sigaction SIGTSTP_action)
 {
     pid_t spawnPid;
     int childExitStatus;
@@ -336,8 +336,17 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
         }
         case 0:
         {  
-            
+            //handle control Z
+            SIGTSTP_action.sa_handler = SIG_IGN;
+            sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
+
+            //handle control C
+            if (aCommand->background == false)
+            {
+                SIGINT_action.sa_handler = SIG_DFL;
+                sigaction(SIGINT, &SIGINT_action, NULL);
+            }
 
             //check for input redirection or background flag
             if ((aCommand->background == true) || (aCommand->inpRedir != NULL))
@@ -455,7 +464,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
     }
 }
 
-void mainScreen(char* statusString, int *statusCode)
+void mainScreen(char* statusString, int *statusCode, struct sigaction SIGINT_action, struct sigaction SIGTSTP_action)
 {
     char* input;
     struct commandStruct* commandLine;
@@ -465,7 +474,7 @@ void mainScreen(char* statusString, int *statusCode)
     //handles when the user doesn't enter anything
     if (commandLine == NULL)
     {
-        mainScreen(statusString, statusCode);
+        mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
     }
 
     //as long as 'exit' not entered continue looping
@@ -474,28 +483,28 @@ void mainScreen(char* statusString, int *statusCode)
         //if user enters nothing or '#' then we restart
         if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
         {
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
 
         //If user enters "cd"
         else if (strcmp(commandLine->command, "cd") == 0)
         {
             changeDir(commandLine);
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
 
         else if (strcmp(commandLine->command, "status") == 0)
         {
             printf("%s %d\n", statusString, *statusCode);
             fflush(stdout);
-            mainScreen(statusString, statusCode);
+            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
         else
             //use execvp to run commands as child
         {
             //printCommand(commandLine);
-            execCommand(commandLine, statusString, statusCode);
-            mainScreen(statusString, statusCode);
+            execCommand(commandLine, statusString, statusCode, SIGINT_action, SIGTSTP_action);
+            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
     }
 
@@ -505,6 +514,29 @@ void mainScreen(char* statusString, int *statusCode)
     }
 }
 
+void catchSIGTSTP(int signo) 
+{
+
+    // If it's false, set it to true and display a message reentrantly
+    if (fgFlag == false) 
+    {
+        char* message = "Entering foreground-only mode (& is now ignored)\n";
+        write(STDOUT_FILENO, message, 49);
+        fflush(stdout);
+        fgFlag = true;
+    }
+
+    // If it's true, set it to false and display a message reentrantly
+    else 
+    {
+        char* message = "Exiting foreground-only mode\n";
+        write(STDOUT_FILENO, message, 29);
+        fflush(stdout);
+        fgFlag = false;
+    }
+}
+
+
 int main(void)
 {
     //initalize the status variables for use in Status command
@@ -513,23 +545,23 @@ int main(void)
     int statusCode = 0;
 
     //ignore control C
-    struct sigaction stopSigint = { 0 };
-    stopSigint.sa_handler = sigInt;
-    sigfillset(&stopSigint.sa_mask);
-    stopSigint.sa_flags = 0;
-    sigaction(SIGINT, &stopSigint, NULL);
+    struct sigaction SIGINT_action = {0};
+    SIGINT_action.sa_handler = SIG_IGN;
+    sigfillset(&SIGINT_action.sa_mask);
+    SIGINT_action.sa_flags = 0;
+    sigaction(SIGINT, &SIGINT_action, NULL);
 
     //redirect control Z to catchSIGTSTP()
-	struct sigaction sigTstop = {0};
-	sigTstop.sa_handler = catchSIGTSTP;
-	sigfillset(&sigTstop.sa_mask);
-	sigTstop.sa_flags = 0;
-	sigaction(SIGTSTP, &sigTstop, NULL);
+    struct sigaction SIGTSTP_action = {0};
+    SIGTSTP_action.sa_handler = catchSIGTSTP;
+    sigfillset(&SIGTSTP_action.sa_mask);
+    SIGTSTP_action.sa_flags = 0;
+    sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen(statusString, &statusCode);
+    mainScreen(statusString, &statusCode, SIGINT_action, SIGTSTP_action);
 
     return 0;
 
