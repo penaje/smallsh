@@ -9,10 +9,6 @@
 #include <signal.h>
 #include <limits.h>
 
-#ifndef MAX_BUF
-#define MAX_BUF 200
-#endif // !MAX_BUFF
-
 //holds the process id's that are running
 //Using a max of 200 https://edstem.org/us/courses/16718/discussion/1080332
 pid_t backgroundPids[200];
@@ -28,10 +24,12 @@ struct commandStruct {
     bool background;
 };
 
-//Will use once signal handlers are implemented...
+//Used for handling sigTstop
 bool fgFlag = false;
 
 
+/* Parse the command the user types in and create a struct with the information
+*/
 struct commandStruct* parseInput(char* currLine, bool fgFlag)
 {
     struct commandStruct* newCommand = malloc(sizeof(struct commandStruct));
@@ -67,7 +65,7 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
         return newCommand;
     }
 
-    //Now we get the arguments
+    //Now we get the arguments, start at index 1 since index 0 is the command
     int i = 1;     
 
     //ignore input redirect, output redirect, and background commands
@@ -108,7 +106,7 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
 /*
 * Algorithm adapted from
 * CITATION: https ://www.tutorialspoint.com/c-program-to-replace-a-word-in-a-text-by-another-given-word
-* This function handles variable expansion
+* This function handles variable expansion when the user types $$
 */
 char* varExpansion(char* inputString)
 {
@@ -162,6 +160,9 @@ char* varExpansion(char* inputString)
     return(expCommand);
 }
 
+/*This function first checks for any background processes that have terminated
+* and then it prompts the user for input
+*/
 char* getInput()
 {
     //clean up background process before returning control
@@ -184,6 +185,9 @@ char* getInput()
     return expandedInput;
 }
 
+/* This function was used for testing parseInput
+* it prints out the commandStruct
+*/
 void printCommand(struct commandStruct* aCommand) 
 {
     printf("command: %s | inputRedir: %s | OutputRedir: %s | Background: %d \n", 
@@ -204,36 +208,31 @@ void printCommand(struct commandStruct* aCommand)
 
 }
 
-//This will be executed from mainScreen, so we will pass it the whole command struct
+/*This function allows the user to change directory, it uses
+* 'chdir'
+*/
 void changeDir(struct commandStruct* aCommand)
 {
-    //checks for an argument
+    //checks for an argument, if there is none we go to 'HOME' directory
     if (aCommand->args[1] == NULL)
     {
         chdir(getenv("HOME"));
-        char currDir[MAX_BUF];
-        getcwd(currDir, MAX_BUF);
-        //printf("Current working directory: %s\n", currDir);
-        //fflush(stdout);
     }
+
     else
-    {
+
+    {   //if the chdir command fails we print an error
         if (chdir(aCommand->args[1]) != 0)
         {
             printf("Error occured, directory not changed\n");
             fflush(stdout);
         }
-        else
-        {
-            char currDir[MAX_BUF];
-            getcwd(currDir, MAX_BUF);
-            //printf("Current working directory: %s\n", currDir);
-            //fflush(stdout);
-        }
     }
 }
 
-//adds the Pid to the list of running processes
+/* This function takes a pid number and adds it to a list of current running background
+* pids
+*/
 void addBackgroundPid(pid_t pidNum)
 {
     for (int i = 0; i < 200; i++)
@@ -241,24 +240,24 @@ void addBackgroundPid(pid_t pidNum)
         if (backgroundPids[i] == NULL)
         {
             backgroundPids[i] = pidNum;
-            //printf("Background pid %d successfully added to array at index %d\n", pidNum, i);
-            //fflush(stdout);
             break;
         }
     }
 }
 
 
-//checks if any processes have terminated
+/* This function checks if any background processes have terminated
+*/
 void backgroundCheck()
 {
     int childExitMethod;
 
-    //wait for ANY child processes
+    //check if any child processes have terminated
     pid_t childPID = waitpid(-1, &childExitMethod, WNOHANG);
 
 
-    //if no error and child has terminated
+    //if no error and child has terminated we print what caused the 
+    //termination and the pid
     if (childPID > 0)
     {
         if (WIFEXITED(childExitMethod) != 0)
@@ -280,6 +279,8 @@ void backgroundCheck()
         
     }
 
+    //Remove the pid of the terminated process from list of running
+    //background pirds
     for (int i = 0; i < 200; i++)
     {
         if (backgroundPids[i] == childPID)
@@ -290,7 +291,9 @@ void backgroundCheck()
 }
 
 
-//Kills all child processes and then exits
+/* This function kills all child processes and then kills
+* the parent process
+*/
 void exitShell()
 {
     int i;
@@ -312,12 +315,14 @@ void exitShell()
 }
 
 
-//Uses execvp to execute the non built in commands
+/* This function uses execvp to execute the non built in commands
+*/
 void execCommand(struct commandStruct* aCommand, char *statusString, int *statusCode, struct sigaction SIGINT_action, struct sigaction SIGTSTP_action)
 {
     pid_t spawnPid;
     int childExitStatus;
 
+    //variables used for I/O redirection
     int inpFD;
     int outFD;
     int result;
@@ -351,6 +356,7 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
             //check for input redirection or background flag
             if ((aCommand->background == true) || (aCommand->inpRedir != NULL))
             {
+                //send to dev/null if no redirection
                 if (aCommand->inpRedir == NULL)
                 {
                     inpFD = open("/dev/null", O_RDONLY);
@@ -369,16 +375,20 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 // Redirects stdin to the input file
                 result = dup2(inpFD, 0);
 
-                // Checks for error when redirecting the input
+                // Checks for an error 
                 if (result == -1) 
                 {
                     exit(1);
                 }
+
+                //close the input file
+                fcntl(inpFD, F_SETFD, FD_CLOEXEC);
             }
 
             //check for output redirection or background flag
             if ((aCommand->background == true) || (aCommand->outpRedir != NULL))
             {
+                //send to dev/null if no redirection
                 if (aCommand->outpRedir == NULL)
                 {
                     outFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0640);
@@ -397,15 +407,20 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 // Redirects stdin to the output file
                 result = dup2(outFD, 1);
 
-                // Checks for error when redirecting the output
+                // Checks for an error 
                 if (result == -1)
                 {
                     exit(1);
                 }
+
+                //close the output file
+                fcntl(outFD, F_SETFD, FD_CLOEXEC);
             }
 
+            //execute the command
             if (execvp(aCommand->command, aCommand->args) < 0)
             {
+                //if there is an error we change the exit status
                 perror(aCommand->command);
                 fflush(stdout);
                 *statusCode = 1;
@@ -448,8 +463,6 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 }
                 else if (WIFSIGNALED(childExitStatus) != 0)
                 {
-                    //printf("pid %d is done: ", spawnPid);
-                    //fflush(stdout);
                     int termSignal = WTERMSIG(childExitStatus);
                     printf("terminated by signal %d\n", termSignal);
                     fflush(stdout);
@@ -463,7 +476,8 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
         }
     }
 }
-
+/* This function runs the loop for our main screen
+*/
 void mainScreen(char* statusString, int *statusCode, struct sigaction SIGINT_action, struct sigaction SIGTSTP_action)
 {
     char* input;
@@ -493,6 +507,7 @@ void mainScreen(char* statusString, int *statusCode, struct sigaction SIGINT_act
             mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
 
+        //If the user enters "status"
         else if (strcmp(commandLine->command, "status") == 0)
         {
             printf("%s %d\n", statusString, *statusCode);
@@ -502,22 +517,24 @@ void mainScreen(char* statusString, int *statusCode, struct sigaction SIGINT_act
         else
             //use execvp to run commands as child
         {
-            //printCommand(commandLine);
             execCommand(commandLine, statusString, statusCode, SIGINT_action, SIGTSTP_action);
             mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
         }
     }
 
+    //call the exit function
     if (strcmp(commandLine->command, "exit") == 0)
     {
         exitShell();
     }
 }
 
-void catchSIGTSTP(int signo) 
+/* This function handles our sigtstp signal
+*/
+void handle_SIGTSTP(int signo) 
 {
 
-    // If it's false, set it to true and display a message reentrantly
+    // If it's false we then set it to true and print a message
     if (fgFlag == false) 
     {
         char* message = "\nEntering foreground-only mode (& is now ignored)\n";
@@ -526,7 +543,7 @@ void catchSIGTSTP(int signo)
         fgFlag = true;
     }
 
-    // If it's true, set it to false and display a message reentrantly
+    // If it's true we then set it to false and print a message
     else 
     {
         char* message = "\nExiting foreground-only mode\n";
@@ -536,7 +553,10 @@ void catchSIGTSTP(int signo)
     }
 }
 
-
+/* This is our main function, it sets up our
+* sigaction structs for signal handling and then 
+* calls the mainScreen() function
+*/
 int main(void)
 {
     //initalize the status variables for use in Status command
@@ -544,18 +564,36 @@ int main(void)
     strcpy(statusString, "exit value");
     int statusCode = 0;
 
-    //ignore control C
+    //Set up for ignoring control C
+    //initialize the SIGINT_action struct to be empty
     struct sigaction SIGINT_action = {0};
+
+    // Register SIG_IGN as the signal handler
     SIGINT_action.sa_handler = SIG_IGN;
+
+    // Block all catchable signals while SIG_IGN is running
     sigfillset(&SIGINT_action.sa_mask);
+
+    // No flags set
     SIGINT_action.sa_flags = 0;
+
+    // Install our signal handler
     sigaction(SIGINT, &SIGINT_action, NULL);
 
-    //redirect control Z to catchSIGTSTP()
+    //set up for handling control Z
+    //initialize the SIGTSTP_action struct to be empty
     struct sigaction SIGTSTP_action = {0};
-    SIGTSTP_action.sa_handler = catchSIGTSTP;
+
+    // Register handle_SIGTSTP as the signal handler
+    SIGTSTP_action.sa_handler = handle_SIGTSTP;
+
+    // Block all catchable signals while handle_SIGTSTP is running
     sigfillset(&SIGTSTP_action.sa_mask);
+
+    // no flags set
     SIGTSTP_action.sa_flags = 0;
+
+    // Install our signal handler
     sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
     printf("$ smallsh\n");

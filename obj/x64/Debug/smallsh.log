@@ -4,7 +4,7 @@
   Invoking 'make', working directory: '/nfs/stak/users/penaje/projects/smallsh/'
   gcc -std=gnu99 -Wall -g -o smallsh smallsh.c
   smallsh.c: In function ‘varExpansion’:
-  smallsh.c:136:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
+  smallsh.c:134:9: warning: passing argument 1 of ‘strstr’ from incompatible pointer type [enabled by default]
            if (strstr(&inputString, pidVar) == &inputString[i])
            ^
   In file included from smallsh.c:3:0:
@@ -12,33 +12,32 @@
    extern char *strstr (const char *__haystack, const char *__needle)
                 ^
   smallsh.c: In function ‘getInput’:
-  smallsh.c:168:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
+  smallsh.c:169:5: warning: implicit declaration of function ‘backgroundCheck’ [-Wimplicit-function-declaration]
        backgroundCheck();
        ^
   smallsh.c: In function ‘addBackgroundPid’:
-  smallsh.c:241:31: warning: comparison between pointer and integer [enabled by default]
+  smallsh.c:240:31: warning: comparison between pointer and integer [enabled by default]
            if (backgroundPids[i] == NULL)
                                  ^
   smallsh.c: At top level:
-  smallsh.c:253:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
+  smallsh.c:251:6: warning: conflicting types for ‘backgroundCheck’ [enabled by default]
    void backgroundCheck()
         ^
-  
-  smallsh.c:168:5: note: previous implicit declaration of ‘backgroundCheck’ was here
+  smallsh.c:169:5: note: previous implicit declaration of ‘backgroundCheck’ was here
        backgroundCheck();
        ^
   smallsh.c: In function ‘backgroundCheck’:
-  smallsh.c:287:31: warning: assignment makes integer from pointer without a cast [enabled by default]
+  smallsh.c:288:31: warning: assignment makes integer from pointer without a cast [enabled by default]
                backgroundPids[i] = NULL;
                                  ^
   smallsh.c: In function ‘main’:
-  smallsh.c:548:12: warning: missing braces around initializer [-Wmissing-braces]
+  smallsh.c:569:12: warning: missing braces around initializer [-Wmissing-braces]
        struct sigaction SIGINT_action = {0};
               ^
-  smallsh.c:548:12: warning: (near initialization for ‘SIGINT_action.__sigaction_handler’) [-Wmissing-braces]
-  smallsh.c:555:12: warning: missing braces around initializer [-Wmissing-braces]
+  smallsh.c:569:12: warning: (near initialization for ‘SIGINT_action.__sigaction_handler’) [-Wmissing-braces]
+  smallsh.c:585:12: warning: missing braces around initializer [-Wmissing-braces]
        struct sigaction SIGTSTP_action = {0};
               ^
-  smallsh.c:555:12: warning: (near initialization for ‘SIGTSTP_action.__sigaction_handler’) [-Wmissing-braces]
+  smallsh.c:585:12: warning: (near initialization for ‘SIGTSTP_action.__sigaction_handler’) [-Wmissing-braces]
   
   Copying file '/nfs/stak/users/penaje/projects/smallsh/smallsh' to 'C:\Users\jerem\source\repos\cs344-a3-smallsh\smallsh\bin\x64\Debug\smallsh'
