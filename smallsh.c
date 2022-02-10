@@ -9,6 +9,10 @@
 #include <signal.h>
 #include <limits.h>
 
+#ifndef MAX_BUF
+#define MAX_BUF 200
+#endif // !MAX_BUFF
+
 //holds the process id's that are running
 //Using a max of 200 https://edstem.org/us/courses/16718/discussion/1080332
 pid_t backgroundPids[200];
@@ -102,6 +106,7 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     return newCommand;
 
 }
+
 
 /*
 * Algorithm adapted from
@@ -213,19 +218,28 @@ void printCommand(struct commandStruct* aCommand)
 */
 void changeDir(struct commandStruct* aCommand)
 {
-    //checks for an argument, if there is none we go to 'HOME' directory
+    //checks for an argument
     if (aCommand->args[1] == NULL)
     {
         chdir(getenv("HOME"));
+        char currDir[MAX_BUF];
+        getcwd(currDir, MAX_BUF);
+        //printf("Current working directory: %s\n", currDir);
+        //fflush(stdout);
     }
-
     else
-
-    {   //if the chdir command fails we print an error
+    {
         if (chdir(aCommand->args[1]) != 0)
         {
             printf("Error occured, directory not changed\n");
             fflush(stdout);
+        }
+        else
+        {
+            char currDir[MAX_BUF];
+            getcwd(currDir, MAX_BUF);
+            //printf("Current working directory: %s\n", currDir);
+            //fflush(stdout);
         }
     }
 }
@@ -476,66 +490,14 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
         }
     }
 }
-/* This function runs the loop for our main screen
-*/
-void mainScreen(char* statusString, int *statusCode, struct sigaction SIGINT_action, struct sigaction SIGTSTP_action)
-{
-    char* input;
-    struct commandStruct* commandLine;
-    input = getInput(backgroundPids);
-    commandLine = parseInput(input, fgFlag);
-
-    //handles when the user doesn't enter anything
-    if (commandLine == NULL)
-    {
-        mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
-    }
-
-    //as long as 'exit' not entered continue looping
-    while (strcmp(commandLine->command, "exit") != 0)
-    {
-        //if user enters nothing or '#' then we restart
-        if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
-        {
-            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
-        }
-
-        //If user enters "cd"
-        else if (strcmp(commandLine->command, "cd") == 0)
-        {
-            changeDir(commandLine);
-            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
-        }
-
-        //If the user enters "status"
-        else if (strcmp(commandLine->command, "status") == 0)
-        {
-            printf("%s %d\n", statusString, *statusCode);
-            fflush(stdout);
-            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
-        }
-        else
-            //use execvp to run commands as child
-        {
-            execCommand(commandLine, statusString, statusCode, SIGINT_action, SIGTSTP_action);
-            mainScreen(statusString, statusCode, SIGINT_action, SIGTSTP_action);
-        }
-    }
-
-    //call the exit function
-    if (strcmp(commandLine->command, "exit") == 0)
-    {
-        exitShell();
-    }
-}
 
 /* This function handles our sigtstp signal
 */
-void handle_SIGTSTP(int signo) 
+void handle_SIGTSTP(int signo)
 {
 
     // If it's false we then set it to true and print a message
-    if (fgFlag == false) 
+    if (fgFlag == false)
     {
         char* message = "\nEntering foreground-only mode (& is now ignored)\n";
         write(STDOUT_FILENO, message, 49);
@@ -544,7 +506,7 @@ void handle_SIGTSTP(int signo)
     }
 
     // If it's true we then set it to false and print a message
-    else 
+    else
     {
         char* message = "\nExiting foreground-only mode\n";
         write(STDOUT_FILENO, message, 29);
@@ -553,20 +515,13 @@ void handle_SIGTSTP(int signo)
     }
 }
 
-/* This is our main function, it sets up our
-* sigaction structs for signal handling and then 
-* calls the mainScreen() function
+/* This function runs the loop for our main screen
 */
-int main(void)
+void mainScreen(char* statusString, int *statusCode)
 {
-    //initalize the status variables for use in Status command
-    char statusString[30];
-    strcpy(statusString, "exit value");
-    int statusCode = 0;
-
     //Set up for ignoring control C
     //initialize the SIGINT_action struct to be empty
-    struct sigaction SIGINT_action = {0};
+    struct sigaction SIGINT_action = {{0}};
 
     // Register SIG_IGN as the signal handler
     SIGINT_action.sa_handler = SIG_IGN;
@@ -582,7 +537,7 @@ int main(void)
 
     //set up for handling control Z
     //initialize the SIGTSTP_action struct to be empty
-    struct sigaction SIGTSTP_action = {0};
+    struct sigaction SIGTSTP_action = {{0}};
 
     // Register handle_SIGTSTP as the signal handler
     SIGTSTP_action.sa_handler = handle_SIGTSTP;
@@ -596,10 +551,71 @@ int main(void)
     // Install our signal handler
     sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
+
+    bool loopFlag = true;
+
+    //as long as 'exit' not entered continue looping
+    while (loopFlag == true)
+    {
+        char* input;
+        struct commandStruct* commandLine;
+        input = getInput();
+        commandLine = parseInput(input, fgFlag);
+
+        //if user enters nothing or '#' then we restart
+        if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
+        {
+            continue;
+        }
+
+        //If user enters "cd"
+        else if (strcmp(commandLine->command, "cd") == 0)
+        {
+            changeDir(commandLine);
+            continue;
+        }
+
+        //If the user enters "status"
+        else if (strcmp(commandLine->command, "status") == 0)
+        {
+            printf("%s %d\n", statusString, *statusCode);
+            fflush(stdout);
+            continue;
+        }
+
+        else if (strcmp(commandLine->command, "exit") == 0)
+        {
+            exitShell();
+        }
+
+        else
+            //use execvp to run commands as child
+        {
+            execCommand(commandLine, statusString, statusCode, SIGINT_action, SIGTSTP_action);
+            continue;
+        }
+
+
+    }
+
+}
+
+
+/* This is our main function, it sets up our
+* sigaction structs for signal handling and then 
+* calls the mainScreen() function
+*/
+int main(void)
+{
+    //initalize the status variables for use in Status command
+    char statusString[30];
+    strcpy(statusString, "exit value");
+    int statusCode = 0;
+
     printf("$ smallsh\n");
     fflush(stdout);
 
-    mainScreen(statusString, &statusCode, SIGINT_action, SIGTSTP_action);
+    mainScreen(statusString, &statusCode);
 
     return 0;
 
