@@ -28,7 +28,7 @@ struct commandStruct {
     bool background;
 };
 
-//Used for handling sigTstop
+//Used for handling sigtstp
 bool fgFlag = false;
 
 
@@ -50,7 +50,9 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     {
         return NULL;
     }
+
     else
+
     {
         newCommand->command = calloc(strlen(token) + 1, sizeof(char));
         strcpy(newCommand->command, token);
@@ -63,17 +65,17 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
     //advance the token
     token = strtok_r(NULL, " \n", &saveptr);
 
+    //Now we get the arguments, start at index 1 since index 0 is the command
+    int i = 1;
+
     //if no args or redirect or BG then we just return the command
     if (token == NULL)
     {
         return newCommand;
-    }
+    } 
 
-    //Now we get the arguments, start at index 1 since index 0 is the command
-    int i = 1;     
-
-    //ignore input redirect, output redirect, and background commands
-    while ((token != NULL) && (strcmp(token, "<") != 0) && (strcmp(token, ">") != 0) && (strcmp(token, "&") != 0))
+    //ignore input redirect & output redirect symbols
+    while ((token != NULL) && (strcmp(token, "<") != 0) && (strcmp(token, ">") != 0))
     {
         newCommand->args[i] = calloc(strlen(token) + 1, sizeof(char));
         strcpy(newCommand->args[i], token);
@@ -95,13 +97,21 @@ struct commandStruct* parseInput(char* currLine, bool fgFlag)
             newCommand->outpRedir = calloc(strlen(token) + 1, sizeof(char));
             strcpy(newCommand->outpRedir, token);
         }
-        else if ((strcmp(token, "&") == 0) && (fgFlag == false))
-        {
-            newCommand->background = true;
-        }
-
         token = strtok_r(NULL, " \n", &saveptr);
     }
+
+    // check if '&' was the last argument
+     if ((strcmp(newCommand->args[(i - 1)], "&") == 0) && (fgFlag == false))
+        {
+            newCommand->background = true;
+            newCommand->args[(i - 1)] = NULL;
+        }
+
+     //if in fg only mode then we don't set background to true, but still remove the '&' argument
+     else if ((strcmp(newCommand->args[(i - 1)], "&") == 0) && (fgFlag == true))
+     {
+         newCommand->args[(i - 1)] = NULL;
+     }
 
     return newCommand;
 
@@ -160,8 +170,6 @@ char* varExpansion(char* inputString)
         }
     }
 
-    //frees the dynamically allocated memory
-    free(str);
     return(expCommand);
 }
 
@@ -373,17 +381,19 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 //send to dev/null if no redirection
                 if (aCommand->inpRedir == NULL)
                 {
-                    inpFD = open("/dev/null", O_RDONLY);
+                    inpFD = open("/dev/null", O_RDONLY, 0666);
                 }
                 else
                 {
-                    inpFD = open(aCommand->inpRedir, O_RDONLY);
+                    inpFD = open(aCommand->inpRedir, O_RDONLY, 0666);
                 }
 
+                // if error set exit status to 1 and print message
                 if (inpFD == -1) 
                 {
                     printf("cannot open %s for input\n", aCommand->inpRedir);
                     fflush(stdout);
+                    *statusCode = 1;
                 }
 
                 // Redirects stdin to the input file
@@ -405,17 +415,19 @@ void execCommand(struct commandStruct* aCommand, char *statusString, int *status
                 //send to dev/null if no redirection
                 if (aCommand->outpRedir == NULL)
                 {
-                    outFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0640);
+                    outFD = open("/dev/null", O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 }
                 else
                 {
-                    outFD = open(aCommand->outpRedir, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+                    outFD = open(aCommand->outpRedir, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 }
 
+                //if error set exit status to 1 and print message
                 if (outFD == -1)
                 {
                     printf("cannot open %s for output\n", aCommand->outpRedir);
                     fflush(stdout);
+                    *statusCode = 1;
                 }
 
                 // Redirects stdin to the output file
@@ -562,8 +574,13 @@ void mainScreen(char* statusString, int *statusCode)
         input = getInput();
         commandLine = parseInput(input, fgFlag);
 
+
+        if (commandLine == NULL)
+        {
+            continue;
+        }
         //if user enters nothing or '#' then we restart
-        if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, " ") == 0) || (strcmp(commandLine->command, "\n") == 0))
+        else if (commandLine->args[0][0] == '#' || (strcmp(commandLine->command, "\n") == 0))
         {
             continue;
         }
@@ -594,10 +611,7 @@ void mainScreen(char* statusString, int *statusCode)
             execCommand(commandLine, statusString, statusCode, SIGINT_action, SIGTSTP_action);
             continue;
         }
-
-
     }
-
 }
 
 
